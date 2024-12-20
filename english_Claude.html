@@ -1,0 +1,297 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle2, XCircle } from 'lucide-react';
+
+// Lista iniziale di verbi irregolari comuni per il primo anno di liceo
+const defaultVerbs = [
+  { infinitive: "be", pastSimple: "was/were", pastParticiple: "been", italian: "essere" },
+  { infinitive: "become", pastSimple: "became", pastParticiple: "become", italian: "diventare" },
+  { infinitive: "begin", pastSimple: "began", pastParticiple: "begun", italian: "iniziare" },
+  { infinitive: "break", pastSimple: "broke", pastParticiple: "broken", italian: "rompere" },
+  { infinitive: "bring", pastSimple: "brought", pastParticiple: "brought", italian: "portare" },
+  { infinitive: "build", pastSimple: "built", pastParticiple: "built", italian: "costruire" },
+  { infinitive: "buy", pastSimple: "bought", pastParticiple: "bought", italian: "comprare" },
+  { infinitive: "catch", pastSimple: "caught", pastParticiple: "caught", italian: "prendere" },
+  { infinitive: "choose", pastSimple: "chose", pastParticiple: "chosen", italian: "scegliere" },
+  { infinitive: "come", pastSimple: "came", pastParticiple: "come", italian: "venire" },
+  { infinitive: "do", pastSimple: "did", pastParticiple: "done", italian: "fare" },
+  { infinitive: "drink", pastSimple: "drank", pastParticiple: "drunk", italian: "bere" },
+  { infinitive: "eat", pastSimple: "ate", pastParticiple: "eaten", italian: "mangiare" },
+  { infinitive: "fall", pastSimple: "fell", pastParticiple: "fallen", italian: "cadere" },
+  { infinitive: "feel", pastSimple: "felt", pastParticiple: "felt", italian: "sentire" },
+  { infinitive: "find", pastSimple: "found", pastParticiple: "found", italian: "trovare" },
+  { infinitive: "get", pastSimple: "got", pastParticiple: "got/gotten", italian: "ottenere" },
+  { infinitive: "give", pastSimple: "gave", pastParticiple: "given", italian: "dare" },
+  { infinitive: "go", pastSimple: "went", pastParticiple: "gone", italian: "andare" },
+  { infinitive: "have", pastSimple: "had", pastParticiple: "had", italian: "avere" }
+];
+
+const QuizApp = () => {
+  const [customVerbs, setCustomVerbs] = useState(() => {
+    const savedVerbs = localStorage.getItem('customVerbs');
+    return savedVerbs ? JSON.parse(savedVerbs) : [];
+  });
+  
+  const [verbMode, setVerbMode] = useState('all'); // 'all', 'default', 'custom'
+  const [currentVerb, setCurrentVerb] = useState(null);
+  const [userAnswers, setUserAnswers] = useState({
+    pastSimple: '',
+    pastParticiple: ''
+  });
+  const [showResult, setShowResult] = useState(false);
+  const [results, setResults] = useState({
+    pastSimple: false,
+    pastParticiple: false
+  });
+  const [showAddVerb, setShowAddVerb] = useState(false);
+  const [newVerb, setNewVerb] = useState({
+    infinitive: '',
+    pastSimple: '',
+    pastParticiple: '',
+    italian: ''
+  });
+  const [showVerbList, setShowVerbList] = useState(false);
+
+  useEffect(() => {
+    selectRandomVerb();
+  }, [verbMode]);
+
+  useEffect(() => {
+    localStorage.setItem('customVerbs', JSON.stringify(customVerbs));
+  }, [customVerbs]);
+
+  const getAvailableVerbs = () => {
+    switch(verbMode) {
+      case 'default':
+        return defaultVerbs;
+      case 'custom':
+        return customVerbs;
+      case 'all':
+      default:
+        return [...defaultVerbs, ...customVerbs];
+    }
+  };
+
+  const selectRandomVerb = () => {
+    const availableVerbs = getAvailableVerbs();
+    if (availableVerbs.length === 0) {
+      setCurrentVerb(null);
+      return;
+    }
+    const randomIndex = Math.floor(Math.random() * availableVerbs.length);
+    setCurrentVerb(availableVerbs[randomIndex]);
+    setUserAnswers({ pastSimple: '', pastParticiple: '' });
+    setShowResult(false);
+    setResults({ pastSimple: false, pastParticiple: false });
+  };
+
+  const normalizeAnswer = (answer) => {
+    return answer.toLowerCase().replace(/\s+/g, '');
+  };
+
+  const handleSubmit = () => {
+    const pastSimpleCorrect = normalizeAnswer(userAnswers.pastSimple) === normalizeAnswer(currentVerb.pastSimple);
+    const pastParticipleCorrect = normalizeAnswer(userAnswers.pastParticiple) === normalizeAnswer(currentVerb.pastParticiple);
+    setResults({
+      pastSimple: pastSimpleCorrect,
+      pastParticiple: pastParticipleCorrect
+    });
+    setShowResult(true);
+  };
+
+  const handleAddVerb = () => {
+    if (newVerb.infinitive && newVerb.pastSimple && newVerb.pastParticiple && newVerb.italian) {
+      setCustomVerbs([...customVerbs, newVerb]);
+      setNewVerb({ infinitive: '', pastSimple: '', pastParticiple: '', italian: '' });
+      setShowAddVerb(false);
+    }
+  };
+
+  return (
+    <div className="max-w-lg mx-auto p-4">
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-center">
+            Quiz Verbi Irregolari Inglesi
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!showAddVerb && !showVerbList && (
+            <div className="mb-4">
+              <div className="flex justify-center space-x-2 mb-6">
+                <Button 
+                  variant={verbMode === 'all' ? "default" : "outline"}
+                  onClick={() => setVerbMode('all')}
+                >
+                  Tutti i verbi
+                </Button>
+                <Button 
+                  variant={verbMode === 'default' ? "default" : "outline"}
+                  onClick={() => setVerbMode('default')}
+                >
+                  Verbi predefiniti
+                </Button>
+                <Button 
+                  variant={verbMode === 'custom' ? "default" : "outline"}
+                  onClick={() => setVerbMode('custom')}
+                  disabled={customVerbs.length === 0}
+                >
+                  Verbi personalizzati
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {currentVerb && !showAddVerb && !showVerbList && (
+            <div className="space-y-4">
+              <div className="text-center mb-6">
+                <p className="text-lg mb-2">Verbo: <strong>{currentVerb.infinitive}</strong></p>
+                <p className="text-gray-600">({currentVerb.italian})</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-2">Past Simple:</label>
+                  <Input
+                    type="text"
+                    value={userAnswers.pastSimple}
+                    onChange={(e) => setUserAnswers({...userAnswers, pastSimple: e.target.value})}
+                    className="w-full"
+                  />
+                  {showResult && (
+                    <Alert className={results.pastSimple ? "bg-green-50 mt-2" : "bg-red-50 mt-2"}>
+                      <AlertDescription className="flex items-center">
+                        {results.pastSimple ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
+                        ) : (
+                          <>
+                            <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                            <span>Corretto: {currentVerb.pastSimple}</span>
+                          </>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block mb-2">Past Participle:</label>
+                  <Input
+                    type="text"
+                    value={userAnswers.pastParticiple}
+                    onChange={(e) => setUserAnswers({...userAnswers, pastParticiple: e.target.value})}
+                    className="w-full"
+                  />
+                  {showResult && (
+                    <Alert className={results.pastParticiple ? "bg-green-50 mt-2" : "bg-red-50 mt-2"}>
+                      <AlertDescription className="flex items-center">
+                        {results.pastParticiple ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
+                        ) : (
+                          <>
+                            <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                            <span>Corretto: {currentVerb.pastParticiple}</span>
+                          </>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-center space-x-2">
+                <Button onClick={handleSubmit}>Verifica</Button>
+                <Button variant="outline" onClick={selectRandomVerb}>Prossimo verbo</Button>
+              </div>
+            </div>
+          )}
+
+          {verbMode === 'custom' && customVerbs.length === 0 && !showAddVerb && !showVerbList && (
+            <Alert>
+              <AlertDescription>
+                Non ci sono verbi personalizzati. Usa il pulsante "Aggiungi verbo" per aggiungerne alcuni.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {showAddVerb && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Aggiungi nuovo verbo</h3>
+              <Input
+                placeholder="Infinito"
+                value={newVerb.infinitive}
+                onChange={(e) => setNewVerb({...newVerb, infinitive: e.target.value})}
+              />
+              <Input
+                placeholder="Past Simple"
+                value={newVerb.pastSimple}
+                onChange={(e) => setNewVerb({...newVerb, pastSimple: e.target.value})}
+              />
+              <Input
+                placeholder="Past Participle"
+                value={newVerb.pastParticiple}
+                onChange={(e) => setNewVerb({...newVerb, pastParticiple: e.target.value})}
+              />
+              <Input
+                placeholder="Traduzione italiana"
+                value={newVerb.italian}
+                onChange={(e) => setNewVerb({...newVerb, italian: e.target.value})}
+              />
+              <div className="flex space-x-2">
+                <Button onClick={handleAddVerb}>Salva</Button>
+                <Button variant="outline" onClick={() => setShowAddVerb(false)}>Annulla</Button>
+              </div>
+            </div>
+          )}
+
+          {showVerbList && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Lista dei verbi</h3>
+              <div className="max-h-96 overflow-y-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr>
+                      <th className="text-left p-2">Infinito</th>
+                      <th className="text-left p-2">Past Simple</th>
+                      <th className="text-left p-2">Past Participle</th>
+                      <th className="text-left p-2">Italiano</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getAvailableVerbs().map((verb, index) => (
+                      <tr key={index} className="border-t">
+                        <td className="p-2">{verb.infinitive}</td>
+                        <td className="p-2">{verb.pastSimple}</td>
+                        <td className="p-2">{verb.pastParticiple}</td>
+                        <td className="p-2">{verb.italian}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Button variant="outline" onClick={() => setShowVerbList(false)}>Chiudi lista</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-center space-x-2">
+        {!showAddVerb && !showVerbList && (
+          <Button variant="outline" onClick={() => setShowAddVerb(true)}>
+            Aggiungi verbo
+          </Button>
+        )}
+        {!showAddVerb && !showVerbList && (
+          <Button variant="outline" onClick={() => setShowVerbList(true)}>
+            Mostra lista
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default QuizApp;
